@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FitoPro</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <h1>FitoPro</h1>
+      <p>Votre coach sportif intelligent, partout avec vous.</p>
+    </header>
+
+    <main class="grid">
+      <section class="card">
+        <h2>Créer une séance</h2>
+        <form id="workout-form">
+          <label>
+            Exercice
+            <input id="exercise" required placeholder="Pompes" />
+          </label>
+          <label>
+            Répétitions
+            <input id="reps" type="number" min="1" value="10" required />
+          </label>
+          <label>
+            Séries
+            <input id="sets" type="number" min="1" value="3" required />
+          </label>
+          <label>
+            Durée série (secondes)
+            <input id="duration" type="number" min="10" value="45" required />
+          </label>
+          <button type="submit">Ajouter au programme</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Programme du jour</h2>
+        <ul id="workout-list" class="list"></ul>
+      </section>
+
+      <section class="card">
+        <h2>Suivi en temps réel</h2>
+        <p id="current-task">Aucune séance démarrée.</p>
+        <div class="timer" id="timer">00:00</div>
+        <div class="controls">
+          <button id="start-btn">Démarrer</button>
+          <button id="next-btn" disabled>Valider la série</button>
+          <button id="reset-btn">Réinitialiser</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Statistiques</h2>
+        <p>Total séances terminées: <strong id="completed-workouts">0</strong></p>
+        <p>Total séries validées: <strong id="completed-sets">0</strong></p>
+        <p>Streak (jours actifs): <strong id="streak">0</strong></p>
+        <h3>Suggestion d'amélioration</h3>
+        <p id="suggestion">Ajoutez au moins 1 exercice pour obtenir des suggestions.</p>
+      </section>
+
+      <section class="card full-width">
+        <h2>Motivation & défis</h2>
+        <p id="challenge">Défi du jour: complétez 3 séries sans interruption.</p>
+      </section>
+    </main>
+
+    <footer>
+      <small>FitoPro • MVP local (données sauvegardées dans votre navigateur)</small>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>
