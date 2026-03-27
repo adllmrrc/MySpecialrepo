@@ -33,6 +33,8 @@ const templateLossBtn = document.getElementById('template-loss');
 const onboarding = document.getElementById('onboarding');
 const closeOnboardingBtn = document.getElementById('close-onboarding');
 const toastEl = document.getElementById('toast');
+const welcomeScreen = document.getElementById('welcome-screen');
+const enterAppBtn = document.getElementById('enter-app-btn');
 
 const dailyChart = document.getElementById('daily-chart');
 const exerciseChart = document.getElementById('exercise-chart');
@@ -106,6 +108,26 @@ function triggerHaptic() {
   if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
     navigator.vibrate(8);
   }
+}
+
+function playSatisfyAnimation(level = 'set') {
+  timerEl.classList.remove('pop');
+  currentTask.classList.remove('celebrate');
+  void timerEl.offsetWidth;
+  timerEl.classList.add('pop');
+  currentTask.classList.add('celebrate');
+  setTimeout(() => {
+    currentTask.classList.remove('celebrate');
+  }, 650);
+  if (level === 'workout') {
+    showToast('✨ Excellent ! Séance validée.');
+  }
+}
+
+function closeWelcomeScreen() {
+  welcomeScreen.classList.add('hide');
+  welcomeScreen.setAttribute('aria-hidden', 'true');
+  showToast('Bienvenue 👋 Bonne séance !');
 }
 
 function workoutCountLast7Days() {
@@ -342,6 +364,7 @@ function validateStep() {
 
   if (state.session.phase === 'exercice') {
     state.stats.completedSets += 1;
+    playSatisfyAnimation('set');
 
     if (state.session.setIndex < workout.sets) {
       setPhase('repos');
@@ -356,6 +379,7 @@ function validateStep() {
     }
 
     state.stats.completedWorkouts += 1;
+    playSatisfyAnimation('workout');
     addHistoryEntry(workout.exercise, workout.sets);
     markActiveDay();
 
@@ -555,6 +579,7 @@ templateStrengthBtn.addEventListener('click', () => applyTemplate('strength'));
 templateLossBtn.addEventListener('click', () => applyTemplate('loss'));
 
 closeOnboardingBtn.addEventListener('click', closeOnboarding);
+enterAppBtn.addEventListener('click', closeWelcomeScreen);
 
 setPhase('attente');
 setControlState({ start: false, pause: true, resume: true, next: true });
