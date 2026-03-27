@@ -33,6 +33,7 @@ const templateLossBtn = document.getElementById('template-loss');
 const onboarding = document.getElementById('onboarding');
 const closeOnboardingBtn = document.getElementById('close-onboarding');
 const toastEl = document.getElementById('toast');
+const preloadingScreen = document.getElementById('preloading-screen');
 const welcomeScreen = document.getElementById('welcome-screen');
 const enterAppBtn = document.getElementById('enter-app-btn');
 
@@ -128,6 +129,15 @@ function closeWelcomeScreen() {
   welcomeScreen.classList.add('hide');
   welcomeScreen.setAttribute('aria-hidden', 'true');
   showToast('Bienvenue 👋 Bonne séance !');
+}
+
+function launchIntroSequence() {
+  setTimeout(() => {
+    preloadingScreen.classList.add('hide');
+    preloadingScreen.setAttribute('aria-hidden', 'true');
+    welcomeScreen.classList.remove('hidden-until-load');
+    welcomeScreen.setAttribute('aria-hidden', 'false');
+  }, 1300);
 }
 
 function workoutCountLast7Days() {
@@ -585,3 +595,4 @@ setPhase('attente');
 setControlState({ start: false, pause: true, resume: true, next: true });
 hydrate();
 initOnboarding();
+launchIntroSequence();
