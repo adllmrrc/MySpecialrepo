@@ -43,8 +43,13 @@ const focusPhase = document.getElementById('focus-phase');
 const focusPauseBtn = document.getElementById('focus-pause-btn');
 const focusNextBtn = document.getElementById('focus-next-btn');
 const focusExitBtn = document.getElementById('focus-exit-btn');
+const focusHeartRate = document.getElementById('focus-heart-rate');
 const watchImportInput = document.getElementById('watch-import-input');
 const watchStatus = document.getElementById('watch-status');
+const watchLiveStatus = document.getElementById('watch-live-status');
+const watchBridgeUrlInput = document.getElementById('watch-bridge-url');
+const watchLiveConnectBtn = document.getElementById('watch-live-connect-btn');
+const watchLiveDisconnectBtn = document.getElementById('watch-live-disconnect-btn');
 
 const dailyChart = document.getElementById('daily-chart');
 const exerciseChart = document.getElementById('exercise-chart');
@@ -71,7 +76,7 @@ const state = {
   workouts: JSON.parse(localStorage.getItem('fitopro.workouts') || '[]'),
   stats: JSON.parse(localStorage.getItem('fitopro.stats') || '{"completedWorkouts":0,"completedSets":0,"lastActive":"","streak":0}'),
   history: JSON.parse(localStorage.getItem('fitopro.history') || '[]'),
-  settings: JSON.parse(localStorage.getItem('fitopro.settings') || '{"weeklyGoal":4,"onboarded":false}'),
+  settings: JSON.parse(localStorage.getItem('fitopro.settings') || '{"weeklyGoal":4,"onboarded":false,"watchBridgeUrl":"","watchLiveEnabled":false}'),
   session: {
     workoutIndex: 0,
     setIndex: 0,
@@ -79,6 +84,10 @@ const state = {
     secondsLeft: 0,
     timerId: null,
     paused: false,
+  },
+  watchLive: {
+    heartRate: null,
+    pollId: null,
   },
 };
 
@@ -241,6 +250,44 @@ function importAppleWatchCsv(file) {
     }
   };
   reader.readAsText(file);
+}
+
+async function fetchWatchLiveData() {
+  if (!state.settings.watchBridgeUrl) return;
+  try {
+    const response = await fetch(state.settings.watchBridgeUrl, { cache: 'no-store' });
+    if (!response.ok) throw new Error('Bridge error');
+    const data = await response.json();
+    const hr = Number.parseInt(data.heartRate ?? data.heart_rate ?? data.bpm, 10);
+    if (!Number.isFinite(hr)) throw new Error('Invalid heart rate payload');
+    state.watchLive.heartRate = hr;
+    watchLiveStatus.textContent = `Connecté • ❤️ ${hr} bpm`;
+    focusHeartRate.textContent = `❤️ ${hr} bpm`;
+  } catch {
+    watchLiveStatus.textContent = 'Bridge live inaccessible (vérifiez URL / permissions).';
+  }
+}
+
+function startWatchLivePolling() {
+  if (!state.settings.watchBridgeUrl) {
+    watchLiveStatus.textContent = 'Ajoutez une URL bridge valide.';
+    return;
+  }
+  stopWatchLivePolling();
+  state.settings.watchLiveEnabled = true;
+  save();
+  watchLiveStatus.textContent = 'Connexion en cours…';
+  fetchWatchLiveData();
+  state.watchLive.pollId = setInterval(fetchWatchLiveData, 5000);
+}
+
+function stopWatchLivePolling() {
+  if (state.watchLive.pollId) clearInterval(state.watchLive.pollId);
+  state.watchLive.pollId = null;
+  state.settings.watchLiveEnabled = false;
+  save();
+  watchLiveStatus.textContent = 'Non connecté.';
+  focusHeartRate.textContent = '❤️ -- bpm';
 }
 
 function workoutCountLast7Days() {
@@ -588,7 +635,12 @@ function importData(file) {
       state.workouts = safe.workouts;
       state.history = safe.history;
       state.stats = safe.stats;
-      state.settings = safe.settings;
+      state.settings = {
+        weeklyGoal: safe.settings.weeklyGoal ?? 4,
+        onboarded: safe.settings.onboarded ?? true,
+        watchBridgeUrl: safe.settings.watchBridgeUrl || '',
+        watchLiveEnabled: Boolean(safe.settings.watchLiveEnabled),
+      };
       save();
       hydrate();
       showToast('Import réussi.');
@@ -609,7 +661,7 @@ function clearAllData() {
   state.workouts = [];
   state.stats = { completedWorkouts: 0, completedSets: 0, lastActive: '', streak: 0 };
   state.history = [];
-  state.settings = { weeklyGoal: 4, onboarded: true };
+  state.settings = { weeklyGoal: 4, onboarded: true, watchBridgeUrl: '', watchLiveEnabled: false };
   resetSession();
   hydrate();
   showToast('Données locales supprimées.');
@@ -617,6 +669,7 @@ function clearAllData() {
 
 function hydrate() {
   weeklyGoalInput.value = state.settings.weeklyGoal;
+  watchBridgeUrlInput.value = state.settings.watchBridgeUrl || '';
   renderTimer();
   renderWorkouts();
   renderHistory();
@@ -626,6 +679,8 @@ function hydrate() {
   updateChallenge();
   updateBadges();
   updateWeeklyGoalView();
+  if (state.settings.watchLiveEnabled && state.settings.watchBridgeUrl) startWatchLivePolling();
+  else watchLiveStatus.textContent = 'Non connecté.';
 }
 
 function initOnboarding() {
@@ -695,6 +750,12 @@ exportBtn.addEventListener('click', exportData);
 importInput.addEventListener('change', (event) => importData(event.target.files[0]));
 clearDataBtn.addEventListener('click', clearAllData);
 watchImportInput.addEventListener('change', (event) => importAppleWatchCsv(event.target.files[0]));
+watchBridgeUrlInput.addEventListener('change', () => {
+  state.settings.watchBridgeUrl = watchBridgeUrlInput.value.trim();
+  save();
+});
+watchLiveConnectBtn.addEventListener('click', startWatchLivePolling);
+watchLiveDisconnectBtn.addEventListener('click', stopWatchLivePolling);
 
 templateBeginnerBtn.addEventListener('click', () => applyTemplate('beginner'));
 templateStrengthBtn.addEventListener('click', () => applyTemplate('strength'));

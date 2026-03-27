@@ -11,6 +11,7 @@ FitoPro est une application web front-end (HTML/CSS/JavaScript) pour créer, sui
 - Logo mascotte FitoPro + animation d'intro avant le loading screen et l'écran welcome.
 - Focus mode plein écran au lancement d'entraînement (timer + infos essentielles).
 - Import CSV Apple Watch (export Apple Santé/forme) pour enrichir l'historique local.
+- Mode live Apple Watch via URL bridge JSON (heartRate/bpm) pour afficher la fréquence cardiaque en direct dans le focus mode.
 - Historique par date (7 jours) + graphiques simples sur canvas.
 - Templates rapides (Débutant, Force, Perte de poids).
 - Objectif hebdomadaire de séances + suivi visuel.

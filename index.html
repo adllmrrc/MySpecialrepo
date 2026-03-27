@@ -48,6 +48,7 @@
         <p id="focus-phase" class="focus-phase">EXERCICE</p>
         <h1 id="focus-timer" class="focus-timer">00:00</h1>
         <p id="focus-task" class="focus-task">Prêt</p>
+        <p id="focus-heart-rate" class="focus-heart-rate">❤️ -- bpm</p>
         <div class="focus-actions">
           <button id="focus-pause-btn">Pause</button>
           <button id="focus-next-btn">Valider</button>
@@ -147,6 +148,16 @@
           Importer données Apple Watch
           <input id="watch-import-input" type="file" accept=".csv,text/csv" />
         </label>
+        <h3>Apple Watch Live (bridge)</h3>
+        <p id="watch-live-status">Non connecté.</p>
+        <label>
+          URL bridge JSON (ex: https://mon-bridge/watch/live)
+          <input id="watch-bridge-url" placeholder="https://..." />
+        </label>
+        <div class="data-actions">
+          <button id="watch-live-connect-btn">Connecter live</button>
+          <button id="watch-live-disconnect-btn" class="danger">Déconnecter</button>
+        </div>
       </section>
 
       <section class="card">
