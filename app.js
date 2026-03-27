@@ -48,8 +48,11 @@ const watchImportInput = document.getElementById('watch-import-input');
 const watchStatus = document.getElementById('watch-status');
 const watchLiveStatus = document.getElementById('watch-live-status');
 const watchBridgeUrlInput = document.getElementById('watch-bridge-url');
+const watchBridgeTokenInput = document.getElementById('watch-bridge-token');
+const hrAlertThresholdInput = document.getElementById('hr-alert-threshold');
 const watchLiveConnectBtn = document.getElementById('watch-live-connect-btn');
 const watchLiveDisconnectBtn = document.getElementById('watch-live-disconnect-btn');
+const hrLiveChart = document.getElementById('hr-live-chart');
 
 const dailyChart = document.getElementById('daily-chart');
 const exerciseChart = document.getElementById('exercise-chart');
@@ -72,11 +75,12 @@ const templates = {
   ],
 };
 
+const loadedState = FitState.load();
 const state = {
-  workouts: JSON.parse(localStorage.getItem('fitopro.workouts') || '[]'),
-  stats: JSON.parse(localStorage.getItem('fitopro.stats') || '{"completedWorkouts":0,"completedSets":0,"lastActive":"","streak":0}'),
-  history: JSON.parse(localStorage.getItem('fitopro.history') || '[]'),
-  settings: JSON.parse(localStorage.getItem('fitopro.settings') || '{"weeklyGoal":4,"onboarded":false,"watchBridgeUrl":"","watchLiveEnabled":false}'),
+  workouts: loadedState.workouts,
+  stats: loadedState.stats,
+  history: loadedState.history,
+  settings: loadedState.settings,
   session: {
     workoutIndex: 0,
     setIndex: 0,
@@ -88,14 +92,25 @@ const state = {
   watchLive: {
     heartRate: null,
     pollId: null,
+    points: [],
   },
 };
 
+const workoutTimer = FitTimer.createTimer({
+  onTick: (remaining) => {
+    state.session.secondsLeft = Math.max(0, remaining);
+    renderTimer();
+  },
+  onDone: () => {
+    state.session.secondsLeft = 0;
+    renderTimer();
+    currentTask.textContent = 'Temps écoulé. Cliquez sur "Valider" pour continuer.';
+    setControlState({ start: true, pause: true, resume: true, next: false });
+  },
+});
+
 function save() {
-  localStorage.setItem('fitopro.workouts', JSON.stringify(state.workouts));
-  localStorage.setItem('fitopro.stats', JSON.stringify(state.stats));
-  localStorage.setItem('fitopro.history', JSON.stringify(state.history));
-  localStorage.setItem('fitopro.settings', JSON.stringify(state.settings));
+  FitState.persist(state);
 }
 
 function updateStatsView() {
@@ -252,21 +267,31 @@ function importAppleWatchCsv(file) {
   reader.readAsText(file);
 }
 
-async function fetchWatchLiveData() {
-  if (!state.settings.watchBridgeUrl) return;
-  try {
-    const response = await fetch(state.settings.watchBridgeUrl, { cache: 'no-store' });
-    if (!response.ok) throw new Error('Bridge error');
-    const data = await response.json();
-    const hr = Number.parseInt(data.heartRate ?? data.heart_rate ?? data.bpm, 10);
-    if (!Number.isFinite(hr)) throw new Error('Invalid heart rate payload');
-    state.watchLive.heartRate = hr;
-    watchLiveStatus.textContent = `Connecté • ❤️ ${hr} bpm`;
-    focusHeartRate.textContent = `❤️ ${hr} bpm`;
-  } catch {
-    watchLiveStatus.textContent = 'Bridge live inaccessible (vérifiez URL / permissions).';
-  }
-}
+const watchBridge = FitWatch.createWatchBridge({
+  getUrl: () => state.settings.watchBridgeUrl,
+  getToken: () => state.settings.watchToken,
+  onData: (normalized) => {
+    state.watchLive.heartRate = normalized.heartRate;
+    watchLiveStatus.textContent = `Connecté • ❤️ ${normalized.heartRate ?? '--'} bpm • zone ${normalized.zone}`;
+    focusHeartRate.textContent = `❤️ ${normalized.heartRate ?? '--'} bpm`;
+    if (normalized.heartRate) {
+      state.watchLive.points.push(normalized.heartRate);
+      if (state.watchLive.points.length > 40) state.watchLive.points.shift();
+      drawHrLiveChart();
+      if (normalized.heartRate >= (state.settings.hrAlertThreshold || 170)) {
+        FitUI.playTone('alert');
+        FitUI.speak('Attention fréquence cardiaque élevée');
+        showToast(`⚠️ HR élevée: ${normalized.heartRate} bpm`);
+      }
+    }
+  },
+  onError: (_error, retryCount) => {
+    watchLiveStatus.textContent = `Connexion instable… tentative ${retryCount}`;
+  },
+  onOffline: () => {
+    watchLiveStatus.textContent = 'Bridge offline. Reconnexion automatique.';
+  },
+});
 
 function startWatchLivePolling() {
   if (!state.settings.watchBridgeUrl) {
@@ -277,13 +302,11 @@ function startWatchLivePolling() {
   state.settings.watchLiveEnabled = true;
   save();
   watchLiveStatus.textContent = 'Connexion en cours…';
-  fetchWatchLiveData();
-  state.watchLive.pollId = setInterval(fetchWatchLiveData, 5000);
+  watchBridge.start();
 }
 
 function stopWatchLivePolling() {
-  if (state.watchLive.pollId) clearInterval(state.watchLive.pollId);
-  state.watchLive.pollId = null;
+  watchBridge.stop();
   state.settings.watchLiveEnabled = false;
   save();
   watchLiveStatus.textContent = 'Non connecté.';
@@ -346,10 +369,8 @@ function setPhase(phase) {
 }
 
 function stopTick() {
-  if (state.session.timerId) {
-    clearInterval(state.session.timerId);
-    state.session.timerId = null;
-  }
+  workoutTimer.stop();
+  state.session.timerId = null;
 }
 
 function setControlState({ start, pause, resume, next }) {
@@ -440,6 +461,34 @@ function drawBars(canvas, labels, values, color) {
   });
 }
 
+function drawHrLiveChart() {
+  const ctx = hrLiveChart.getContext('2d');
+  ctx.clearRect(0, 0, hrLiveChart.width, hrLiveChart.height);
+  const points = state.watchLive.points;
+  if (!points.length) {
+    ctx.fillStyle = '#64748b';
+    ctx.font = '14px sans-serif';
+    ctx.fillText('Fréquence cardiaque live en attente…', 20, 30);
+    return;
+  }
+
+  const max = Math.max(...points, 120);
+  const min = Math.min(...points, 50);
+  const range = Math.max(1, max - min);
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  points.forEach((p, i) => {
+    const x = (i / Math.max(1, points.length - 1)) * (hrLiveChart.width - 40) + 20;
+    const y = hrLiveChart.height - 20 - ((p - min) / range) * (hrLiveChart.height - 50);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.fillStyle = '#0f172a';
+  ctx.fillText(`HR actuel: ${points[points.length - 1]} bpm`, 20, hrLiveChart.height - 6);
+}
+
 function renderCharts() {
   const dailyGrouped = {};
   state.history.forEach((entry) => {
@@ -471,23 +520,14 @@ function startTick() {
   stopTick();
   state.session.paused = false;
   setControlState({ start: true, pause: false, resume: true, next: true });
-
-  state.session.timerId = setInterval(() => {
-    state.session.secondsLeft -= 1;
-    renderTimer();
-
-    if (state.session.secondsLeft <= 0) {
-      stopTick();
-      state.session.secondsLeft = 0;
-      renderTimer();
-      currentTask.textContent = 'Temps écoulé. Cliquez sur "Valider" pour continuer.';
-      setControlState({ start: true, pause: true, resume: true, next: false });
-    }
-  }, 1000);
+  workoutTimer.start(state.session.secondsLeft);
+  state.session.timerId = true;
 }
 
 function startSession() {
   triggerHaptic();
+  FitUI.playTone('ok');
+  FitUI.speak('Séance démarrée');
   if (!state.workouts.length) {
     showToast('Ajoutez au moins un exercice avant de démarrer.');
     return;
@@ -506,7 +546,8 @@ function startSession() {
 function pauseSession() {
   triggerHaptic();
   if (!state.session.timerId) return;
-  stopTick();
+  workoutTimer.pause();
+  state.session.timerId = null;
   state.session.paused = true;
   currentTask.textContent = 'Pause en cours…';
   setControlState({ start: true, pause: true, resume: false, next: true });
@@ -516,7 +557,10 @@ function resumeSession() {
   triggerHaptic();
   if (!state.session.paused || state.session.secondsLeft <= 0) return;
   currentTask.textContent = 'Session reprise.';
-  startTick();
+  workoutTimer.resume();
+  state.session.timerId = true;
+  state.session.paused = false;
+  setControlState({ start: true, pause: false, resume: true, next: true });
 }
 
 function validateStep() {
@@ -531,6 +575,7 @@ function validateStep() {
 
     if (state.session.setIndex < workout.sets) {
       setPhase('repos');
+      FitUI.speak('Repos');
       state.session.secondsLeft = workout.rest;
       currentTask.textContent = `Repos avant série ${state.session.setIndex + 1}/${workout.sets}`;
       renderTimer();
@@ -567,6 +612,7 @@ function validateStep() {
     }
   } else if (state.session.phase === 'repos') {
     setPhase('exercice');
+    FitUI.speak('On repart');
     state.session.setIndex += 1;
     state.session.secondsLeft = workout.duration;
     currentTask.textContent = `${workout.exercise} • Série ${state.session.setIndex}/${workout.sets}`;
@@ -640,6 +686,8 @@ function importData(file) {
         onboarded: safe.settings.onboarded ?? true,
         watchBridgeUrl: safe.settings.watchBridgeUrl || '',
         watchLiveEnabled: Boolean(safe.settings.watchLiveEnabled),
+        watchToken: safe.settings.watchToken || '',
+        hrAlertThreshold: safe.settings.hrAlertThreshold || 170,
       };
       save();
       hydrate();
@@ -658,10 +706,18 @@ function clearAllData() {
   localStorage.removeItem('fitopro.stats');
   localStorage.removeItem('fitopro.history');
   localStorage.removeItem('fitopro.settings');
+  stopWatchLivePolling();
   state.workouts = [];
   state.stats = { completedWorkouts: 0, completedSets: 0, lastActive: '', streak: 0 };
   state.history = [];
-  state.settings = { weeklyGoal: 4, onboarded: true, watchBridgeUrl: '', watchLiveEnabled: false };
+  state.settings = {
+    weeklyGoal: 4,
+    onboarded: true,
+    watchBridgeUrl: '',
+    watchLiveEnabled: false,
+    watchToken: '',
+    hrAlertThreshold: 170,
+  };
   resetSession();
   hydrate();
   showToast('Données locales supprimées.');
@@ -670,6 +726,8 @@ function clearAllData() {
 function hydrate() {
   weeklyGoalInput.value = state.settings.weeklyGoal;
   watchBridgeUrlInput.value = state.settings.watchBridgeUrl || '';
+  watchBridgeTokenInput.value = state.settings.watchToken || '';
+  hrAlertThresholdInput.value = state.settings.hrAlertThreshold || 170;
   renderTimer();
   renderWorkouts();
   renderHistory();
@@ -681,6 +739,7 @@ function hydrate() {
   updateWeeklyGoalView();
   if (state.settings.watchLiveEnabled && state.settings.watchBridgeUrl) startWatchLivePolling();
   else watchLiveStatus.textContent = 'Non connecté.';
+  drawHrLiveChart();
 }
 
 function initOnboarding() {
@@ -754,6 +813,16 @@ watchBridgeUrlInput.addEventListener('change', () => {
   state.settings.watchBridgeUrl = watchBridgeUrlInput.value.trim();
   save();
 });
+watchBridgeTokenInput.addEventListener('change', () => {
+  state.settings.watchToken = watchBridgeTokenInput.value.trim();
+  save();
+});
+hrAlertThresholdInput.addEventListener('change', () => {
+  const v = Number.parseInt(hrAlertThresholdInput.value, 10);
+  state.settings.hrAlertThreshold = Number.isFinite(v) ? v : 170;
+  hrAlertThresholdInput.value = state.settings.hrAlertThreshold;
+  save();
+});
 watchLiveConnectBtn.addEventListener('click', startWatchLivePolling);
 watchLiveDisconnectBtn.addEventListener('click', stopWatchLivePolling);
 
@@ -766,6 +835,9 @@ enterAppBtn.addEventListener('click', closeWelcomeScreen);
 
 setPhase('attente');
 setControlState({ start: false, pause: true, resume: true, next: true });
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./public/sw.js').catch(() => {});
+}
 hydrate();
 initOnboarding();
 launchIntroSequence();

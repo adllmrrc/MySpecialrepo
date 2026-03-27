@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#007aff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="public/manifest.webmanifest" />
     <title>FitoPro</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -154,6 +155,14 @@
           URL bridge JSON (ex: https://mon-bridge/watch/live)
           <input id="watch-bridge-url" placeholder="https://..." />
         </label>
+        <label>
+          Token API bridge
+          <input id="watch-bridge-token" placeholder="Bearer token..." />
+        </label>
+        <label>
+          Alerte HR max
+          <input id="hr-alert-threshold" type="number" min="80" max="220" value="170" />
+        </label>
         <div class="data-actions">
           <button id="watch-live-connect-btn">Connecter live</button>
           <button id="watch-live-disconnect-btn" class="danger">Déconnecter</button>
@@ -183,7 +192,12 @@
       <small>FitoPro • MVP local (données sauvegardées dans votre navigateur)</small>
     </footer>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <canvas id="hr-live-chart" width="900" height="220"></canvas>
 
+    <script src="src/state.js"></script>
+    <script src="src/timer.js"></script>
+    <script src="src/watch.js"></script>
+    <script src="src/ui.js"></script>
     <script src="logic.js"></script>
     <script src="app.js"></script>
   </body>
