@@ -102,6 +102,12 @@ function showToast(message) {
   setTimeout(() => toastEl.classList.remove('show'), 1800);
 }
 
+function triggerHaptic() {
+  if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+    navigator.vibrate(8);
+  }
+}
+
 function workoutCountLast7Days() {
   const cutoff = Date.now() - 6 * 86400000;
   return state.history
@@ -297,6 +303,7 @@ function startTick() {
 }
 
 function startSession() {
+  triggerHaptic();
   if (!state.workouts.length) {
     showToast('Ajoutez au moins un exercice avant de démarrer.');
     return;
@@ -312,6 +319,7 @@ function startSession() {
 }
 
 function pauseSession() {
+  triggerHaptic();
   if (!state.session.timerId) return;
   stopTick();
   state.session.paused = true;
@@ -320,12 +328,14 @@ function pauseSession() {
 }
 
 function resumeSession() {
+  triggerHaptic();
   if (!state.session.paused || state.session.secondsLeft <= 0) return;
   currentTask.textContent = 'Session reprise.';
   startTick();
 }
 
 function validateStep() {
+  triggerHaptic();
   const workout = activeWorkout();
   if (!workout) return;
   if (state.session.secondsLeft > 0) return;
@@ -386,6 +396,7 @@ function validateStep() {
 }
 
 function resetSession() {
+  triggerHaptic();
   stopTick();
   state.session.workoutIndex = 0;
   state.session.setIndex = 0;
@@ -399,6 +410,7 @@ function resetSession() {
 }
 
 function applyTemplate(name) {
+  triggerHaptic();
   const chosen = templates[name];
   if (!chosen) return;
   state.workouts = chosen.map((item) => ({ ...item }));

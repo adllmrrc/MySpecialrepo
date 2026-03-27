@@ -6,6 +6,7 @@ FitoPro est une application web front-end (HTML/CSS/JavaScript) pour créer, sui
 - Validation robuste des formulaires avec messages d'erreur explicites.
 - Contrôle complet du timer (démarrer, pause, reprise, validation, reset) + repos entre séries.
 - Feedback UX via toasts de confirmation/erreur et messages de confirmation plus explicites.
+- UI mobile optimisée iPhone (look & feel iOS-like: glassmorphism, safe-area, CTA tactiles 44px, contrôles sticky).
 - Historique par date (7 jours) + graphiques simples sur canvas.
 - Templates rapides (Débutant, Force, Perte de poids).
 - Objectif hebdomadaire de séances + suivi visuel.
