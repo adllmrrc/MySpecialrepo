@@ -38,6 +38,10 @@ const consentCheck = document.getElementById('consent-check');
 const toastEl = document.getElementById('toast');
 const preloadingScreen = document.getElementById('preloading-screen');
 const welcomeScreen = document.getElementById('welcome-screen');
+const welcomeCanvas = document.getElementById('welcome-canvas');
+const welcomeHeadline = document.getElementById('welcome-headline');
+const welcomeSlides = Array.from(document.querySelectorAll('.welcome-slide'));
+const welcomeDots = Array.from(document.querySelectorAll('.welcome-dots .dot'));
 const enterAppBtn = document.getElementById('enter-app-btn');
 const focusMode = document.getElementById('focus-mode');
 const focusTimer = document.getElementById('focus-timer');
@@ -128,6 +132,8 @@ const state = {
     points: [],
   },
 };
+let welcomeSlideTimer = null;
+let welcomeCanvasAnim = null;
 
 const workoutTimer = FitTimer.createTimer({
   onTick: (remaining) => {
@@ -209,7 +215,64 @@ function playSatisfyAnimation(level = 'set') {
 function closeWelcomeScreen() {
   welcomeScreen.classList.add('hide');
   welcomeScreen.setAttribute('aria-hidden', 'true');
+  stopWelcomeAnimations();
   showToast('Bienvenue 👋 Bonne séance !');
+}
+
+function startWelcomeSlides() {
+  if (!welcomeSlides.length) return;
+  let idx = 0;
+  welcomeSlideTimer = setInterval(() => {
+    idx = (idx + 1) % welcomeSlides.length;
+    welcomeSlides.forEach((slide, i) => slide.classList.toggle('active', i === idx));
+    welcomeDots.forEach((dot, i) => dot.classList.toggle('active', i === idx));
+    if (welcomeHeadline) {
+      welcomeHeadline.textContent = welcomeSlides[idx].textContent.replace(/^[^\s]+\s/, '');
+    }
+  }, 2200);
+}
+
+function startWelcomeCanvasFx() {
+  if (!welcomeCanvas) return;
+  const ctx = welcomeCanvas.getContext('2d');
+  const points = Array.from({ length: 28 }).map(() => ({
+    x: Math.random(),
+    y: Math.random(),
+    dx: (Math.random() - 0.5) * 0.0025,
+    dy: (Math.random() - 0.5) * 0.0025,
+    r: Math.random() * 2.2 + 0.6,
+  }));
+
+  function draw() {
+    const w = welcomeCanvas.clientWidth || 320;
+    const h = welcomeCanvas.clientHeight || 220;
+    if (welcomeCanvas.width !== w || welcomeCanvas.height !== h) {
+      welcomeCanvas.width = w;
+      welcomeCanvas.height = h;
+    }
+    ctx.clearRect(0, 0, w, h);
+    points.forEach((p) => {
+      p.x += p.dx;
+      p.y += p.dy;
+      if (p.x < 0 || p.x > 1) p.dx *= -1;
+      if (p.y < 0 || p.y > 1) p.dy *= -1;
+      const x = p.x * w;
+      const y = p.y * h;
+      ctx.beginPath();
+      ctx.fillStyle = 'rgba(34,211,238,0.35)';
+      ctx.arc(x, y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    welcomeCanvasAnim = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function stopWelcomeAnimations() {
+  if (welcomeSlideTimer) clearInterval(welcomeSlideTimer);
+  welcomeSlideTimer = null;
+  if (welcomeCanvasAnim) cancelAnimationFrame(welcomeCanvasAnim);
+  welcomeCanvasAnim = null;
 }
 
 function launchIntroSequence() {
@@ -218,6 +281,8 @@ function launchIntroSequence() {
     preloadingScreen.setAttribute('aria-hidden', 'true');
     welcomeScreen.classList.remove('hidden-until-load');
     welcomeScreen.setAttribute('aria-hidden', 'false');
+    startWelcomeSlides();
+    startWelcomeCanvasFx();
   }, 1300);
 }
 

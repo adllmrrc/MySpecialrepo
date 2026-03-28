@@ -21,12 +21,21 @@
 
     <div id="welcome-screen" class="welcome-screen hidden-until-load" aria-hidden="true">
       <div class="welcome-card">
+        <canvas id="welcome-canvas" class="welcome-canvas" aria-hidden="true"></canvas>
         <div class="orbs">
           <span></span><span></span><span></span>
         </div>
         <img src="assets/logo-fetiche.svg" alt="Mascotte FitoPro" class="logo-mark" />
         <h1>Bienvenue sur FitoPro</h1>
-        <p>Prêt à transformer ton entraînement ?</p>
+        <p id="welcome-headline">Prêt à transformer ton entraînement ?</p>
+        <div class="welcome-highlights">
+          <p class="welcome-slide active">⚡ Programmes adaptatifs à ton niveau.</p>
+          <p class="welcome-slide">❤️ Suivi cardio Apple Watch en direct.</p>
+          <p class="welcome-slide">🏁 Objectifs hebdo + motivation intelligente.</p>
+        </div>
+        <div class="welcome-dots" aria-hidden="true">
+          <span class="dot active"></span><span class="dot"></span><span class="dot"></span>
+        </div>
         <button id="enter-app-btn">Commencer maintenant</button>
       </div>
     </div>

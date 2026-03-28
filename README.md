@@ -10,6 +10,7 @@ FitoPro est une application web front-end (HTML/CSS/JavaScript) pour créer, sui
 - Navigation multi-écrans façon app mobile (Run / Activity / Coach) avec barre iOS en bas, inspiration Nike Run.
 - Nouveau "Run cockpit" (style Nike-like): score de performance, distance, pace, HR et calories en tuiles live.
 - Welcome screen d'entrée + animations satisfaisantes (pop timer, pulse de validation, feedback visuel).
+- Welcome screen cinématique avec slides animées, dots de progression et particules canvas.
 - Logo mascotte FitoPro + animation d'intro avant le loading screen et l'écran welcome.
 - Focus mode plein écran au lancement d'entraînement (timer + infos essentielles).
 - Import CSV Apple Watch (export Apple Santé/forme) pour enrichir l'historique local.
