@@ -71,6 +71,12 @@ const zoneFatburnEl = document.getElementById('zone-fatburn');
 const zoneCardioEl = document.getElementById('zone-cardio');
 const zonePeakEl = document.getElementById('zone-peak');
 const recoveryScoreEl = document.getElementById('recovery-score');
+const runPerformanceEl = document.getElementById('run-performance');
+const runStatusEl = document.getElementById('run-status');
+const runDistanceEl = document.getElementById('run-distance');
+const runPaceEl = document.getElementById('run-pace');
+const runHeartEl = document.getElementById('run-heart');
+const runCaloriesEl = document.getElementById('run-calories');
 const navTabs = Array.from(document.querySelectorAll('.nav-tab'));
 const pagePanels = Array.from(document.querySelectorAll('.page-panel'));
 
@@ -117,6 +123,7 @@ const state = {
   },
   watchLive: {
     heartRate: null,
+    calories: 0,
     pollId: null,
     points: [],
   },
@@ -126,6 +133,7 @@ const workoutTimer = FitTimer.createTimer({
   onTick: (remaining) => {
     state.session.secondsLeft = Math.max(0, remaining);
     renderTimer();
+    updateRunCockpit();
   },
   onDone: () => {
     state.session.secondsLeft = 0;
@@ -312,6 +320,7 @@ const watchBridge = FitWatch.createWatchBridge({
   getToken: () => state.settings.watchToken,
   onData: (normalized) => {
     state.watchLive.heartRate = normalized.heartRate;
+    state.watchLive.calories = Number.isFinite(normalized.calories) ? normalized.calories : state.watchLive.calories;
     watchLiveStatus.textContent = `Connecté • ❤️ ${normalized.heartRate ?? '--'} bpm • zone ${normalized.zone}`;
     focusHeartRate.textContent = `❤️ ${normalized.heartRate ?? '--'} bpm`;
     if (normalized.heartRate) {
@@ -319,6 +328,7 @@ const watchBridge = FitWatch.createWatchBridge({
       if (state.watchLive.points.length > 40) state.watchLive.points.shift();
       drawHrLiveChart();
       updateWatchAnalytics();
+      updateRunCockpit();
       if (normalized.heartRate >= (state.settings.hrAlertThreshold || 170)) {
         FitUI.playTone('alert');
         FitUI.speak('Attention fréquence cardiaque élevée');
@@ -535,6 +545,7 @@ function setPhase(phase) {
   state.session.phase = phase;
   phaseBadge.textContent = `Phase: ${phase}`;
   syncFocusDisplay();
+  updateRunCockpit();
 }
 
 function stopTick() {
@@ -687,6 +698,24 @@ function updateWatchAnalytics() {
   const recoveryScore = Math.max(1, Math.min(100, 100 - Math.max(0, latest - avgRecent)));
   recoveryScoreEl.textContent = `${recoveryScore}/100`;
   watchAnalyticsSummary.textContent = `Moyenne récente ${avgRecent} bpm • actuel ${latest} bpm`;
+}
+
+function updateRunCockpit() {
+  const active = state.session.phase === 'exercice' || state.session.phase === 'repos';
+  const doneSets = state.stats.completedSets || 0;
+  const estDistance = (doneSets * 0.12) + (state.stats.completedWorkouts * 0.3);
+  const minutes = Math.max(1, Math.round((doneSets * 45) / 60));
+  const paceValue = minutes / Math.max(estDistance, 0.1);
+  const paceMin = Math.floor(paceValue);
+  const paceSec = Math.round((paceValue - paceMin) * 60).toString().padStart(2, '0');
+  const perf = Math.max(0, Math.min(9.99, (doneSets / 12) + ((state.watchLive.heartRate || 90) / 120)));
+
+  runPerformanceEl.textContent = perf.toFixed(2);
+  runStatusEl.textContent = active ? 'Session in progress' : 'Ready to run';
+  runDistanceEl.textContent = `${estDistance.toFixed(2)} km`;
+  runPaceEl.textContent = `${paceMin}:${paceSec} /km`;
+  runHeartEl.textContent = `${state.watchLive.heartRate || '--'} bpm`;
+  runCaloriesEl.textContent = `${Math.round(state.watchLive.calories || doneSets * 3)} kcal`;
 }
 
 function renderCharts() {
@@ -943,6 +972,7 @@ function hydrate() {
   else watchLiveStatus.textContent = 'Non connecté.';
   drawHrLiveChart();
   updateWatchAnalytics();
+  updateRunCockpit();
 }
 
 function initOnboarding() {

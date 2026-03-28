@@ -471,6 +471,72 @@ footer {
   box-shadow: 0 8px 22px rgba(244,63,94,.28);
 }
 
+.run-cockpit {
+  background: radial-gradient(circle at 20% 20%, rgba(56,189,248,.22), rgba(15,23,42,.94) 55%);
+  color: #e2e8f0;
+}
+
+.run-cockpit h2 {
+  color: #f8fafc;
+}
+
+.run-cockpit-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.4fr;
+  gap: .8rem;
+}
+
+.run-score {
+  background: rgba(2, 6, 23, .62);
+  border: 1px solid rgba(125, 211, 252, .22);
+  border-radius: 16px;
+  padding: .8rem;
+}
+
+.run-label {
+  margin: 0;
+  font-size: .78rem;
+  color: #93c5fd;
+}
+
+.run-value {
+  margin: .25rem 0;
+  font-size: 2.35rem;
+  line-height: 1;
+  font-weight: 820;
+  color: #facc15;
+}
+
+.run-sub {
+  margin: 0;
+  font-size: .82rem;
+  color: #cbd5e1;
+}
+
+.run-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: .55rem;
+}
+
+.metric-pill {
+  background: rgba(15, 23, 42, .55);
+  border: 1px solid rgba(148, 163, 184, .24);
+  border-radius: 14px;
+  padding: .6rem;
+}
+
+.metric-pill span {
+  display: block;
+  font-size: .76rem;
+  color: #94a3b8;
+}
+
+.metric-pill strong {
+  font-size: 1rem;
+  color: #f8fafc;
+}
+
 .watch-analytics {
   border: 1px solid rgba(148, 163, 184, .26);
   border-radius: 14px;
@@ -583,5 +649,9 @@ footer {
   .ios-bottom-nav {
     width: calc(100vw - 1rem);
     bottom: calc(.45rem + env(safe-area-inset-bottom));
+  }
+
+  .run-cockpit-grid {
+    grid-template-columns: 1fr;
   }
 }
