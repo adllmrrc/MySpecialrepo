@@ -64,6 +64,8 @@ const cloudAppleBtn = document.getElementById('cloud-apple-btn');
 const cloudSaveBtn = document.getElementById('cloud-save-btn');
 const cloudLoadBtn = document.getElementById('cloud-load-btn');
 const cloudStatus = document.getElementById('cloud-status');
+const navTabs = Array.from(document.querySelectorAll('.nav-tab'));
+const pagePanels = Array.from(document.querySelectorAll('.page-panel'));
 
 const dailyChart = document.getElementById('daily-chart');
 const exerciseChart = document.getElementById('exercise-chart');
@@ -899,6 +901,18 @@ function closeOnboarding() {
   showToast('Bienvenue sur FitoPro !');
 }
 
+function setActiveTab(target) {
+  navTabs.forEach((tab) => {
+    const active = tab.dataset.target === target;
+    tab.classList.toggle('active', active);
+    tab.setAttribute('aria-current', active ? 'page' : 'false');
+  });
+  pagePanels.forEach((panel) => {
+    panel.classList.toggle('active', panel.dataset.page === target);
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 form.addEventListener('submit', (event) => {
   event.preventDefault();
   formError.textContent = '';
@@ -991,6 +1005,7 @@ templateEmomBtn.addEventListener('click', () => applyTemplate('emom'));
 
 closeOnboardingBtn.addEventListener('click', closeOnboarding);
 enterAppBtn.addEventListener('click', closeWelcomeScreen);
+navTabs.forEach((tab) => tab.addEventListener('click', () => setActiveTab(tab.dataset.target)));
 
 setPhase('attente');
 setControlState({ start: false, pause: true, resume: true, next: true });
@@ -998,5 +1013,6 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./public/sw.js').catch(() => {});
 }
 hydrate();
+setActiveTab('home');
 initOnboarding();
 launchIntroSequence();

@@ -7,6 +7,7 @@ FitoPro est une application web front-end (HTML/CSS/JavaScript) pour créer, sui
 - Contrôle complet du timer (démarrer, pause, reprise, validation, reset) + repos entre séries.
 - Feedback UX via toasts de confirmation/erreur et messages de confirmation plus explicites.
 - UI mobile optimisée iPhone (look & feel iOS-like: glassmorphism, safe-area, CTA tactiles 44px, contrôles sticky).
+- Navigation multi-écrans façon app mobile (Run / Activity / Coach) avec barre iOS en bas, inspiration Nike Run.
 - Welcome screen d'entrée + animations satisfaisantes (pop timer, pulse de validation, feedback visuel).
 - Logo mascotte FitoPro + animation d'intro avant le loading screen et l'écran welcome.
 - Focus mode plein écran au lancement d'entraînement (timer + infos essentielles).
