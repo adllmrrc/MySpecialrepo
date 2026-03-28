@@ -60,6 +60,7 @@ const cloudEmailInput = document.getElementById('cloud-email');
 const cloudPasswordInput = document.getElementById('cloud-password');
 const cloudRegisterBtn = document.getElementById('cloud-register-btn');
 const cloudLoginBtn = document.getElementById('cloud-login-btn');
+const cloudAppleBtn = document.getElementById('cloud-apple-btn');
 const cloudSaveBtn = document.getElementById('cloud-save-btn');
 const cloudLoadBtn = document.getElementById('cloud-load-btn');
 const cloudStatus = document.getElementById('cloud-status');
@@ -361,6 +362,46 @@ async function cloudAuth(endpoint) {
   state.settings.sessionToken = data.token;
   save();
   cloudStatus.textContent = `Connecté: ${data.email}`;
+}
+
+function decodeAppleIdentityToken(identityToken) {
+  const parts = String(identityToken || '').split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const payloadJson = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(payloadJson);
+  } catch {
+    return null;
+  }
+}
+
+async function cloudAppleAuth() {
+  if (!state.settings.watchBridgeUrl) {
+    cloudStatus.textContent = 'Définissez d’abord URL bridge.';
+    return;
+  }
+
+  const typed = prompt('Collez votre Apple Identity Token (JWT) pour continuer.');
+  if (!typed) {
+    cloudStatus.textContent = 'Connexion Apple annulée.';
+    return;
+  }
+
+  const endpoint = state.settings.watchBridgeUrl.replace('/api/watch/live', '/api/auth/apple');
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ identityToken: typed }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'apple_auth_failed');
+
+  const payload = decodeAppleIdentityToken(typed);
+  state.settings.accountEmail = data.email || payload?.email || '';
+  state.settings.sessionToken = data.token;
+  cloudEmailInput.value = state.settings.accountEmail || '';
+  save();
+  cloudStatus.textContent = `Connecté avec Apple: ${state.settings.accountEmail || 'compte privé Apple'}`;
 }
 
 async function cloudSave() {
@@ -931,6 +972,9 @@ cloudRegisterBtn.addEventListener('click', async () => {
 });
 cloudLoginBtn.addEventListener('click', async () => {
   try { await cloudAuth('/api/auth/login'); } catch { cloudStatus.textContent = 'Échec connexion cloud.'; }
+});
+cloudAppleBtn.addEventListener('click', async () => {
+  try { await cloudAppleAuth(); } catch { cloudStatus.textContent = 'Échec connexion Apple.'; }
 });
 cloudSaveBtn.addEventListener('click', async () => {
   try { await cloudSave(); } catch { cloudStatus.textContent = 'Échec sync cloud.'; }

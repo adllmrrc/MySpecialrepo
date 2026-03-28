@@ -44,6 +44,18 @@ function issueToken(email) {
   return token;
 }
 
+function decodeJwtPayload(token) {
+  const parts = String(token || '').split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = Buffer.from(base64, 'base64').toString('utf8');
+    return JSON.parse(payload);
+  } catch {
+    return null;
+  }
+}
+
 function getSession(req) {
   const auth = req.headers.authorization || '';
   const token = auth.replace(/^Bearer\s+/i, '');
@@ -94,6 +106,25 @@ function createServer() {
         const token = issueToken(body.email);
         log('auth_login', { email: body.email });
         return send(res, 200, { token, email: body.email });
+      } catch {
+        return send(res, 400, { error: 'invalid_json' });
+      }
+    }
+
+    if (req.url === '/api/auth/apple' && req.method === 'POST') {
+      try {
+        const body = await parseBody(req);
+        if (!body.identityToken) return send(res, 400, { error: 'missing_identity_token' });
+        const payload = decodeJwtPayload(body.identityToken);
+        if (!payload || !payload.sub) return send(res, 401, { error: 'invalid_apple_token' });
+
+        const email = payload.email || `apple_${payload.sub}@privaterelay.appleid.com`;
+        if (!users.has(email)) {
+          users.set(email, { password: null, provider: 'apple', appleSub: payload.sub });
+        }
+        const token = issueToken(email);
+        log('auth_apple', { email, hasEmail: Boolean(payload.email) });
+        return send(res, 200, { token, email, provider: 'apple' });
       } catch {
         return send(res, 400, { error: 'invalid_json' });
       }
