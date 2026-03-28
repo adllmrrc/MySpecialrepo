@@ -13,9 +13,11 @@ FitoPro est une application web front-end (HTML/CSS/JavaScript) pour créer, sui
 - Focus mode plein écran au lancement d'entraînement (timer + infos essentielles).
 - Import CSV Apple Watch (export Apple Santé/forme) pour enrichir l'historique local.
 - Mode live Apple Watch via URL bridge JSON (heartRate/bpm) pour afficher la fréquence cardiaque en direct dans le focus mode.
+- Analytics Apple Watch améliorées: répartition des zones cardio + recovery score en direct.
 - Architecture JS modulaire (`src/state.js`, `src/timer.js`, `src/watch.js`, `src/ui.js`).
 - Bridge backend sécurisé (`backend/server.js`) avec token Bearer.
 - Auth session backend (register/login + Apple identity token), sync cloud save/load, endpoint santé `/health`, CORS et rate limiting.
+- Connexion Apple simplifiée avec bouton "Apple rapide" (`POST /api/auth/apple/demo`) en plus du mode token JWT.
 - Normalisation santé (HR, calories, VO2, zone) + graphe cardio live + alerte HR haute.
 - Coach vocal (TTS) + sons/haptics enrichis.
 - PWA améliorée (offline fallback, update/activate flow).
@@ -29,6 +31,10 @@ FitoPro est une application web front-end (HTML/CSS/JavaScript) pour créer, sui
 
 ## Lancer en local
 Ouvrez simplement `index.html` dans votre navigateur.
+
+## Layout du projet
+- Front web principal disponible en racine **et** sous `public/` (`public/index.html`, `public/app.js`, `public/styles.css`, `public/src/*`, `public/assets/*`) pour correspondre au layout de déploiement demandé.
+- Backend Node dans `backend/server.js`.
 
 ## Tests
 ```bash

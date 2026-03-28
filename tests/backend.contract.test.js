@@ -65,6 +65,16 @@ const { createServer } = require('../backend/server.js');
   assert.equal(appleBody.provider, 'apple');
   assert.ok(appleBody.token);
 
+  const appleQuick = await fetch(`${base}/api/auth/apple/demo`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ emailHint: 'quick@apple.com' }),
+  });
+  assert.equal(appleQuick.status, 200);
+  const appleQuickBody = await appleQuick.json();
+  assert.equal(appleQuickBody.email, 'quick@apple.com');
+  assert.equal(appleQuickBody.provider, 'apple_demo');
+
   server.close();
   console.log('backend contract tests: OK');
 })();

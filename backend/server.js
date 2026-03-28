@@ -130,6 +130,20 @@ function createServer() {
       }
     }
 
+    if (req.url === '/api/auth/apple/demo' && req.method === 'POST') {
+      try {
+        const body = await parseBody(req);
+        const hint = String(body.emailHint || '').trim().toLowerCase();
+        const safe = hint && hint.includes('@') ? hint : `apple_user_${Date.now()}@privaterelay.appleid.com`;
+        if (!users.has(safe)) users.set(safe, { password: null, provider: 'apple_demo' });
+        const token = issueToken(safe);
+        log('auth_apple_demo', { email: safe });
+        return send(res, 200, { token, email: safe, provider: 'apple_demo' });
+      } catch {
+        return send(res, 400, { error: 'invalid_json' });
+      }
+    }
+
     if (req.url === '/api/watch/live' && req.method === 'GET') {
       const { session } = getSession(req);
       if (!session) return send(res, 401, { error: 'unauthorized' });
